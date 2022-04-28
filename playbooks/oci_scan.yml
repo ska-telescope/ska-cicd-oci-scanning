@@ -1,0 +1,18 @@
+---
+- name: Ingress Proxy
+  hosts: bifrost
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: scan docker images
+      include_role:
+        name: scan_docker
+
+    - name: scan podman images
+      include_role:
+        name: scan_podman
+
+    - name: scan containerd images
+      include_role:
+        name: scan_containerd
