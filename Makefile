@@ -1,9 +1,13 @@
-COMBINED_INVENTORY=../combined_inventory
+INVENTORY_PATH ?= ..
 
 .DEFAULT_GOAL := help
 
 # define overides for above variables in here
 -include PrivateRules.mak
+
+install:  ## Install dependencies
+	poetry export -f requirements.txt -o requirements.txt --without-hashes
+	pip3 install -r requirements.txt
 
 lint:  ## Lint check playbooks and roles
 	yamllint -d "{extends: relaxed, rules: {line-length: {max: 256}}}" \
@@ -16,13 +20,13 @@ lint:  ## Lint check playbooks and roles
 	flake8 --format junit-xml playbooks/roles/* --output-file linting-flake.xml
 
 set_inventory:  ## Combines the inventory from the parent folder for scanning
-	mkdir -p $(COMBINED_INVENTORY)
-	rm -f $(COMBINED_INVENTORY)/*
-	cp ../inventory_* $(COMBINED_INVENTORY)/
-	rm -f $(COMBINED_INVENTORY)/*.save $(COMBINED_INVENTORY)/*.backup
+	mkdir -p $(INVENTORY_PATH)/combined_inventory
+	rm -f $(INVENTORY_PATH)/combined_inventory/*
+	cp $(INVENTORY_PATH)/inventory_* $(INVENTORY_PATH)/combined_inventory/
+	rm -f $(INVENTORY_PATH)/combined_inventory/*.save $(INVENTORY_PATH)/combined_inventory/*.backup
 
 scan: set_inventory  ## Scans the images running on the inventory
-	ansible-playbook -i $(COMBINED_INVENTORY) playbooks/oci_scan.yml
+	ansible-playbook -i $(INVENTORY_PATH)/combined_inventory playbooks/oci_scan.yml
 
 help:  ## Show this help.
 	@echo "make targets:"
