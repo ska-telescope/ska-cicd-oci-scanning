@@ -33,6 +33,8 @@
       ansible.builtin.command: docker run --rm
         -v {{ trivy_cache_path }}/:/root/.cache/
         -v {{ docker_socket_path }}:/var/run/docker.sock
-        aquasec/trivy:latest image -f json -o {{ trivy_cache_path }}/{{ item }}.trivy.json {{ item }}
+        aquasec/trivy:latest image
+        -o {{ trivy_cache_path }}/{{ item | split('/') | join('_') }}.trivy.json
+        -f json {{ item }}
       with_items: "{{ images.stdout_lines }}"
       changed_when: true

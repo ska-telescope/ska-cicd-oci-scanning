@@ -8,17 +8,17 @@ for filename in glob.glob(sys.argv[1]):
         data = json.load(fd)
 
     # ST-1159: Retrieve the desired information
-    for result in data['Results']:
-        for vuln in result['Vulnerabilities']:
+    for result in data.get('Results', []):
+        for vuln in result.get('Vulnerabilities', []):
             report = {
-                'target': result['Target'],
-                'id': vuln['VulnerabilityID'],
-                'package': vuln['PkgName'],
-                'installed_version': vuln['InstalledVersion'],
-                'fixed_version': vuln['FixedVersion'],
-                'url': vuln['PrimaryURL'],
-                'severity': vuln['Severity'],
-                'msg': vuln['Description'],
+                'target': result.get('Target', 'Unreported'),
+                'id': result.get('VulnerabilityID', 'Unreported'),
+                'package': result.get('PkgName', 'Unreported'),
+                'installed_version':result.get('InstalledVersion', 'Unreported'),
+                'fixed_version': result.get('FixedVersion', 'Unreported'),
+                'url': result.get('PrimaryURL', 'Unreported'),
+                'severity': result.get('Severity', 'Unreported'),
+                'msg': result.get('Description', 'Unreported'),
             }
 
             # TODO: make pretty message for slack

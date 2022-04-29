@@ -7,3 +7,4 @@
   ansible.builtin.command: bash -c 'rm {{ trivy_cache_path }}/*.trivy.json'
   register: cleanup
   changed_when: cleanup.rc == 0
+  ignore_errors: true

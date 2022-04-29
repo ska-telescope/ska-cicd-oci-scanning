@@ -29,12 +29,12 @@
         - name: Recheck podman socket
           ansible.builtin.stat:
             path: "{{ podman_socket_path }}"
-          register: podman_sock
+          register: ensure_podman_sock
 
         - name: Report and fail if the podman socket does not exist
           ansible.builtin.debug:
             msg: "Podman socket not found at {{ podman_socket_path }}."
-          failed_when: true
+          failed_when: not ensure_podman_sock.stat.exists
 
     - name: Prune images not in use
       ansible.builtin.command: podman system prune --all --volumes --force
@@ -51,6 +51,8 @@
         -v {{ trivy_cache_path }}/:/root/.cache/
         -v {{ podman_socket_path }}:/run/podman/podman.sock
         -e XDG_RUNTIME_DIR=/run
-        aquasec/trivy:latest image -f json -o {{ trivy_cache_path }}/{{ item }}.trivy.json {{ item }}
+        aquasec/trivy:latest image
+        -o {{ trivy_cache_path }}/{{ item | split('/') | join('_') }}.trivy.json
+         -f json {{ item }}
       with_items: "{{ images.stdout_lines }}"
       changed_when: true
