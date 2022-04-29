@@ -1,2 +1,2 @@
 ---
-trivy_cache_path: /root/.cache
+slack_vuln_webhook_url:

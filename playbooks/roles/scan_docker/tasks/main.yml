@@ -25,7 +25,7 @@
       changed_when: "'Total reclaimed space: 0B' not in pruned_images.stdout"
 
     - name: List existing images
-      ansible.builtin.command: docker images --format {% raw %}"{{ .Repository }}:{{ .Tag }}"{% endraw %}
+      ansible.builtin.command: docker images --quiet
       register: images
       changed_when: false
 
@@ -34,7 +34,20 @@
         -v {{ trivy_cache_path }}/:/root/.cache/
         -v {{ docker_socket_path }}:/var/run/docker.sock
         aquasec/trivy:latest image
-        -o {{ trivy_cache_path }}/{{ item | split('/') | join('_') }}.trivy.json
+        -o {{ trivy_cache_path }}/docker_{{ item }}.trivy.json
         -f json {{ item }}
       with_items: "{{ images.stdout_lines }}"
       changed_when: true
+
+    - name: Fetch trivy reports
+      ansible.builtin.fetch:
+        src: "{{ trivy_cache_path }}/docker_{{ item }}.trivy.json"
+        dest: /tmp/reports/{{ inventory_hostname }}_docker_{{ item }}.trivy.json
+        flat: true
+      with_items: "{{ images.stdout_lines }}"
+
+    - name: Cleanup trivy reports
+      ansible.builtin.command: bash -c 'rm {{ trivy_cache_path }}/*.trivy.json'
+      register: cleanup
+      changed_when: cleanup.rc == 0
+      ignore_errors: true

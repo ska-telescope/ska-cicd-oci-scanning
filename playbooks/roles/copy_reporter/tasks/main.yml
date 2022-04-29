@@ -1,7 +1,0 @@
----
-- name: Set reporter tool
-  ansible.builtin.template:
-    src: reporter.py.j2
-    dest: "/root/reporter.py"
-    owner: root
-    mode: "0755"

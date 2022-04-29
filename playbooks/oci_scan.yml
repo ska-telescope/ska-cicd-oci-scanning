@@ -1,26 +1,16 @@
 ---
-- name: Ingress Proxy
+- name: OCI Scanning
   hosts: all
   become: true
   gather_facts: true
+  roles:
+    - role: scan_docker
+    - role: scan_podman
+    - role: scan_containerd
 
-  tasks:
-    - name: copy reporting tool
-      ansible.builtin.include_role:
-        name: copy_reporter
-
-    - name: scan docker images
-      ansible.builtin.include_role:
-        name: scan_docker
-
-    - name: scan podman images
-      ansible.builtin.include_role:
-        name: scan_podman
-
-    - name: scan containerd images
-      ansible.builtin.include_role:
-        name: scan_containerd
-
-    - name: report vulnerabilities
-      ansible.builtin.include_role:
-        name: report_vulnerabilities
+- name: Report Vulnerabilities
+  hosts: localhost
+  become: true
+  gather_facts: true
+  roles:
+    - role: report_vulnerabilities
