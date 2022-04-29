@@ -14,6 +14,7 @@ ansible-lint-junit = "^0.17.4"
 yamllint = "^1.26.3"
 flake8 = "^4.0.1"
 yamllint-junit = "^0.8"
+flake8-formatter-junit-xml = "^0.0.6"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

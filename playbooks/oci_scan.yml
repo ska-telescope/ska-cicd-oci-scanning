@@ -1,4 +1,18 @@
 ---
+- name: Pre-scan reports tidying
+  hosts: localhost
+  tasks:
+    - name: Cleanup trivy reports
+      ansible.builtin.file:
+        path: /tmp/reports
+        state: absent
+
+    - name: Create trivy reports directory
+      ansible.builtin.file:
+        path: /tmp/reports
+        state: directory
+        mode: 0775
+
 - name: OCI Scanning
   hosts: all
   become: true
@@ -14,3 +28,11 @@
   gather_facts: true
   roles:
     - role: report_vulnerabilities
+
+- name: Post-scan reports tidying
+  hosts: localhost
+  tasks:
+    - name: Cleanup trivy reports
+      ansible.builtin.file:
+        path: /tmp/reports
+        state: absent

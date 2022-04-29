@@ -17,7 +17,7 @@ lint:  ## Lint check playbooks and roles
 			| yamllint-junit -o linting-yamllint.xml;
 	ansible-lint --nocolor playbooks/roles/* \playbooks/*.yml -p | tee ansible-lint.txt;
 	ansible-lint-junit ansible-lint.txt -o linting-ansible.xml
-	flake8 --format junit-xml playbooks/roles/* --output-file linting-flake.xml
+	flake8 playbooks/roles/* --output-file linting-flake.xml --format junit-xml
 
 set_inventory:  ## Combines the inventory from the parent folder for scanning
 	mkdir -p $(INVENTORY_PATH)/combined_inventory

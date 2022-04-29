@@ -1,7 +1,7 @@
 ---
 - name: Set reporter tool
-  ansible.builtin.template:
-    src: reporter.py.j2
+  ansible.builtin.copy:
+    src: reporter.py
     dest: "/root/reporter.py"
     owner: root
     mode: "0755"
@@ -9,9 +9,3 @@
 - name: Parse and report vulnerabilities
   ansible.builtin.command: python3 /root/reporter.py /tmp/reports/*.trivy.json
   changed_when: false
-
-- name: Cleanup trivy reports
-  ansible.builtin.command: bash -c 'rm /tmp/reports/*.trivy.json'
-  register: cleanup
-  changed_when: cleanup.rc == 0
-  ignore_errors: true

@@ -46,26 +46,36 @@
       register: images
       changed_when: false
 
+    - name: Cleanup trivy reports
+      ansible.builtin.file:
+        path: "{{ trivy_cache_path }}/reports"
+        state: absent
+
+    - name: Create reports folder
+      ansible.builtin.file:
+        path: "{{ trivy_cache_path }}/reports"
+        state: directory
+        mode: 0775
+
     - name: Scan each existing image
       ansible.builtin.command: podman run --rm
         -v {{ trivy_cache_path }}/:/root/.cache/
         -v {{ podman_socket_path }}:/run/podman/podman.sock
         -e XDG_RUNTIME_DIR=/run
         aquasec/trivy:latest image
-        -o {{ trivy_cache_path }}/podman_{{ item }}.trivy.json
+        -o {{ trivy_cache_path }}/reports/podman_{{ item }}.json
          -f json {{ item }}
       with_items: "{{ images.stdout_lines }}"
       changed_when: true
 
     - name: Fetch trivy reports
       ansible.builtin.fetch:
-        src: "{{ trivy_cache_path }}/podman_{{ item }}.trivy.json"
+        src: "{{ trivy_cache_path }}/reports/podman_{{ item }}.json"
         dest: /tmp/reports/{{ inventory_hostname }}_podman_{{ item }}.trivy.json
         flat: true
       with_items: "{{ images.stdout_lines }}"
 
     - name: Cleanup trivy reports
-      ansible.builtin.command: bash -c 'rm {{ trivy_cache_path }}/*.trivy.json'
-      register: cleanup
-      changed_when: cleanup.rc == 0
-      ignore_errors: true
+      ansible.builtin.file:
+        path: "{{ trivy_cache_path }}/reports"
+        state: absent
