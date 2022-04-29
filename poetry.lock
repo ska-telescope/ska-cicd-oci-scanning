@@ -273,6 +273,7 @@ version = "12.3.0"
 [package.dependencies]
 commonmark = ">=0.9.0,<0.10.0"
 pygments = ">=2.6.0,<3.0.0"
+typing-extensions = {version = ">=4.0.0,<5.0", markers = "python_version < \"3.9\""}
 
 [package.extras]
 jupyter = ["ipywidgets (>=7.5.1,<8.0.0)"]
@@ -313,6 +314,14 @@ test = ["enrich (>=1.2.6)", "mock (>=4.0.3)", "molecule (>=3.4.0)", "pytest-cov 
 
 [[package]]
 category = "dev"
+description = "Backported and Experimental Type Hints for Python 3.7+"
+name = "typing-extensions"
+optional = false
+python-versions = ">=3.7"
+version = "4.2.0"
+
+[[package]]
+category = "dev"
 description = "Wildcard/glob file name matcher."
 name = "wcmatch"
 optional = false
@@ -346,9 +355,9 @@ version = "0.8"
 yamllint = "*"
 
 [metadata]
-content-hash = "a4d306a1c5fe3154167e0ed1b2ce2690bba83a4551eec47a888e2a65f8f0e4b7"
+content-hash = "eac81438cdd2cd243aed4d3b53fa4be3c4702d040d2d8a164c7147046df7181e"
 lock-version = "1.1"
-python-versions = "^3.9"
+python-versions = "^3.8"
 
 [metadata.files]
 ansible = [
@@ -616,6 +625,10 @@ rich = [
 subprocess-tee = [
     {file = "subprocess-tee-0.3.5.tar.gz", hash = "sha256:ff5cced589a4b8ac973276ca1ba21bb6e3de600cde11a69947ff51f696efd577"},
     {file = "subprocess_tee-0.3.5-py3-none-any.whl", hash = "sha256:d34186c639aa7f8013b5dfba80e17f52589539137c9d9205f2ae1c1bd03549e1"},
+]
+typing-extensions = [
+    {file = "typing_extensions-4.2.0-py3-none-any.whl", hash = "sha256:6657594ee297170d19f67d55c05852a874e7eb634f4f753dbd667855e07c1708"},
+    {file = "typing_extensions-4.2.0.tar.gz", hash = "sha256:f1c24655a0da0d1b67f07e17a5e6b2a105894e6824b92096378bb3668ef02376"},
 ]
 wcmatch = [
     {file = "wcmatch-8.3-py3-none-any.whl", hash = "sha256:7141d2c85314253f16b38cb3d6cc0fb612918d407e1df3ccc2be7c86cc259c22"},
