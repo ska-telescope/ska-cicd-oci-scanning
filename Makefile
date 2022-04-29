@@ -15,16 +15,16 @@ lint:  ## Lint check playbooks and roles
 	ansible-lint-junit ansible-lint.txt -o linting-ansible.xml
 	flake8 --format junit-xml playbooks/roles/* --output-file linting-flake.xml
 
-set_inventory:
+set_inventory:  ## Combines the inventory from the parent folder for scanning
 	mkdir -p $(COMBINED_INVENTORY)
 	rm -f $(COMBINED_INVENTORY)/*
 	cp ../inventory_* $(COMBINED_INVENTORY)/
 	rm -f $(COMBINED_INVENTORY)/*.save $(COMBINED_INVENTORY)/*.backup
 
-scan: set_inventory
+scan: set_inventory  ## Scans the images running on the inventory
 	ansible-playbook -i $(COMBINED_INVENTORY) playbooks/oci_scan.yml
 
-help:  ## show this help.
+help:  ## Show this help.
 	@echo "make targets:"
 	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ": .*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 	@echo ""; echo "make vars (+defaults):"
