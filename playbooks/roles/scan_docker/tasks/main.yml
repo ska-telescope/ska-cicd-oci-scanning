@@ -1,0 +1,38 @@
+---
+- name: Check if docker is installed
+  ansible.builtin.command: docker --version
+  register: docker_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Scan docker images
+  when: docker_exists.rc == 0
+  block:
+    - name: Check docker socket
+      ansible.builtin.stat:
+        path: "{{ docker_socket_path }}"
+      register: docker_sock
+
+    - name: Report if the docker socket does not exist
+      ansible.builtin.debug:
+        msg: "Docker socket not found at {{ docker_socket_path }}."
+      when: not docker_sock.stat.exists
+      failed_when: true
+
+    - name: Prune images not in use
+      ansible.builtin.command: docker system prune --all --volumes --force
+      register: pruned_images
+      changed_when: "'Total reclaimed space: 0B' not in pruned_images.stdout"
+
+    - name: List existing images
+      ansible.builtin.command: docker images --format {% raw %}"{{ .Repository }}:{{ .Tag }}"{% endraw %}
+      register: images
+      changed_when: false
+
+    - name: Scan each existing image
+      ansible.builtin.command: docker run --rm
+        -v {{ trivy_cache_path }}/:/root/.cache/
+        -v {{ docker_socket_path }}:/var/run/docker.sock
+        aquasec/trivy:latest image -f json -o {{ trivy_cache_path }}/{{ item }}.trivy.json {{ item }}
+      with_items: "{{ images.stdout_lines }}"
+      changed_when: true

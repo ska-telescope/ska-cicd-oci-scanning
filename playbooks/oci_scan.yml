@@ -1,18 +1,26 @@
 ---
 - name: Ingress Proxy
-  hosts: bifrost
+  hosts: all
   become: true
   gather_facts: true
 
   tasks:
+    - name: copy reporting tool
+      ansible.builtin.include_role:
+        name: copy_reporter
+
     - name: scan docker images
-      include_role:
+      ansible.builtin.include_role:
         name: scan_docker
 
     - name: scan podman images
-      include_role:
+      ansible.builtin.include_role:
         name: scan_podman
 
     - name: scan containerd images
-      include_role:
+      ansible.builtin.include_role:
         name: scan_containerd
+
+    - name: report vulnerabilities
+      ansible.builtin.include_role:
+        name: report_vulnerabilities

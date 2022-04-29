@@ -1,0 +1,25 @@
+import json
+import glob
+import sys
+
+# ST-1159: Open the vulnerability report
+for filename in glob.glob(sys.argv[1]):
+    with open(filename, 'r') as fd:
+        data = json.load(fd)
+
+    # ST-1159: Retrieve the desired information
+    for result in data['Results']:
+        for vuln in result['Vulnerabilities']:
+            report = {
+                'target': result['Target'],
+                'id': vuln['VulnerabilityID'],
+                'package': vuln['PkgName'],
+                'installed_version': vuln['InstalledVersion'],
+                'fixed_version': vuln['FixedVersion'],
+                'url': vuln['PrimaryURL'],
+                'severity': vuln['Severity'],
+                'msg': vuln['Description'],
+            }
+
+            # TODO: make pretty message for slack
+            # TODO: Report to slack

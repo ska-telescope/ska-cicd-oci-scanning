@@ -1,0 +1,56 @@
+---
+- name: Check if podman is installed
+  ansible.builtin.command: podman --version
+  register: podman_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Scan podman images
+  when: podman_exists.rc == 0
+  block:
+    - name: Check podman socket
+      ansible.builtin.stat:
+        path: "{{ podman_socket_path }}"
+      register: podman_sock
+
+    - name: Handle missing podman socket
+      when: not podman_sock.stat.exists
+      block:
+        - name: Report if the podman socket does not exist
+          ansible.builtin.debug:
+            msg: "Podman socket not found at {{ podman_socket_path }}."
+
+        - name: Make sure podman.socket service is running
+          ansible.builtin.systemd:
+            service: podman.socket
+            enabled: true
+            state: started
+
+        - name: Recheck podman socket
+          ansible.builtin.stat:
+            path: "{{ podman_socket_path }}"
+          register: podman_sock
+
+        - name: Report and fail if the podman socket does not exist
+          ansible.builtin.debug:
+            msg: "Podman socket not found at {{ podman_socket_path }}."
+          failed_when: true
+
+    - name: Prune images not in use
+      ansible.builtin.command: podman system prune --all --volumes --force
+      register: pruned_images
+      changed_when: "'Total reclaimed space: 0B' not in pruned_images.stdout"
+
+    - name: List existing images
+      ansible.builtin.command: podman images --format {% raw %}"{{ .Repository }}:{{ .Tag }}"{% endraw %}
+      register: images
+      changed_when: false
+
+    - name: Scan each existing image
+      ansible.builtin.command: podman run --rm
+        -v {{ trivy_cache_path }}/:/root/.cache/
+        -v {{ podman_socket_path }}:/run/podman/podman.sock
+        -e XDG_RUNTIME_DIR=/run
+        aquasec/trivy:latest image -f json -o {{ trivy_cache_path }}/{{ item }}.trivy.json {{ item }}
+      with_items: "{{ images.stdout_lines }}"
+      changed_when: true
