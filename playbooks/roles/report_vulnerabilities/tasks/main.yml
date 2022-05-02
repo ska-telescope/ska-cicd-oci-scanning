@@ -7,5 +7,5 @@
     mode: "0755"
 
 - name: Parse and report vulnerabilities
-  ansible.builtin.command: python3 /root/reporter.py {{ slack_vuln_webhook_url }} "/tmp/reports/*.json"
+  ansible.builtin.command: python3 /root/reporter.py "{{ slack_vuln_webhook_url }}" "/tmp/reports/*.json"
   changed_when: false

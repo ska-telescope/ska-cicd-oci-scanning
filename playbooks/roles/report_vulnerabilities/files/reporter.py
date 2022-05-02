@@ -33,11 +33,14 @@ def aggregate_reports(pathglob: str) -> dict:
             data = json.load(fd)
 
         hostname = get_hostname(filepath)
-        repoTag = data['Metadata']['RepoTags'][0]
+        if 'RepoTags' in data['Metadata'].keys():
+            image = data['Metadata']['RepoTags'][0]
+        else:
+            image = data['Metadata']['ImageID']
 
         # ST-1159: Skip duplicate images
-        if repoTag in reports.keys():
-            reports[repoTag]['hosts'].append(hostname)
+        if image in reports.keys():
+            reports[image]['hosts'].append(hostname)
             continue
 
         # ST-1159: Create a report for the repoTag
@@ -54,7 +57,7 @@ def aggregate_reports(pathglob: str) -> dict:
                 report['issues'][vuln['Severity']] = issues
 
         # ST-1159: Save the generated repotag report
-        reports[repoTag] = report
+        reports[image] = report
 
     # ST-1159: Return all generated reports
     return reports
@@ -78,29 +81,30 @@ def report_to_slack(webhook: str, reports: dict) -> None:
             continue
 
         # ST-1159: Send a header for the report
-        message = f":rotating_light: *Scanning Report for Image:* {repotag}"
-        message = f"{message}\n:desktop_computer: *Running on Hosts:* {hosts}"
-        send_to_slack(webhook, message)
-        message = ''
+        msg = "-------------------------------------------------------"
+        msg = f"{msg}\n:rotating_light: *Image Scan Report:* {repotag}"
+        msg = f"{msg}\n:desktop_computer: *Running on Hosts:* {hosts}"
+        send_to_slack(webhook, msg)
+        msg = ''
 
         # ST-1159: For each severity level
         for level in [x for x in sorted_levels if x in issues.keys()]:
-            message = f"{message}\n {icons[level]} *{level}*\n"
+            msg = f"{msg}\n {icons[level]} *{level}*\n"
             for issue in issues[level].items():
                 # ST-1159: Add a link to the issue if there is one
                 if issue[1]:
-                    message = f"{message} <{issue[1]}|{issue[0]}>;"
+                    msg = f"{msg} <{issue[1]}|{issue[0]}>;"
                 else:
-                    message = f"{message} {issue[0]};"
+                    msg = f"{msg} {issue[0]};"
 
                 # ST-1159: Truncate the message if it gets too long
-                if len(message) > 3000:
-                    send_to_slack(webhook, message)
-                    message = ''
+                if len(msg) > 3000:
+                    send_to_slack(webhook, msg)
+                    msg = ''
 
             # ST-1159: Send the issues found
-            send_to_slack(webhook, message)
-            message = ''
+            send_to_slack(webhook, msg)
+            msg = ''
 
 
 if __name__ == "__main__":
