@@ -14,6 +14,7 @@ icons = {
     'UNKNOWN': ':black_circle:',
 }
 sorted_levels = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN']
+slack_endpoint = 'https://slack.com/api/chat.postMessage'
 
 
 # ST-1159: Identify the host being reported on
@@ -63,28 +64,91 @@ def aggregate_reports(pathglob: str) -> dict:
     return reports
 
 
-# ST-1159: Message message to slack
-def send_to_slack(webhook: str, message: str) -> None:
-    data = {'text': message}
-    requests.post(webhook, json.dumps(data))
+# ST-1159: Message to slack
+def message_to_slack(token: str, message: str) -> str:
     time.sleep(1)
+    data = {
+        "channel": "C03DQMEMRMY",
+        "unfurl_links": False,
+        "unfurl_media": False,
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"{message}"
+                }
+            }
+        ]
+    }
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json; charset=utf-8',
+    }
+    response = None
+    while not response or response.status_code != 200:
+        time.sleep(1)
+        response = requests.post(
+            url=slack_endpoint, 
+            data=json.dumps(data), 
+            headers=headers
+        )
+    return response.json()['ts']
+
+
+# ST-1159: Message to slack thread
+def message_to_slack_thread(token: str, message: str, thread: str) -> None:
+    data = {
+        "channel": "C03DQMEMRMY",
+        "thread_ts": thread,
+        "unfurl_links": False,
+        "unfurl_media": False,
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"{message}"
+                }
+            }
+        ]
+    }
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json; charset=utf-8',
+    }
+    response = None
+    while not response or response.status_code != 200:
+        time.sleep(1)
+        response = requests.post(
+            url=slack_endpoint, 
+            data=json.dumps(data), 
+            headers=headers
+        )
 
 
 # ST-1159: Report the issues found to slack
 def report_to_slack(webhook: str, reports: dict) -> None:
     for repotag in reports.keys():
+        # ST-1159: Join hosts list into readable form
         hosts = '; '.join(reports[repotag]['hosts'])
 
-        # ST-1159: Do not report if there is nothing to report
+        # ST-1159: Generate vulnerabilities summary
+        summary = ''
         issues = reports[repotag]['issues']
-        if len(issues.keys()) == 0:
-            continue
+        for level in [x for x in sorted_levels if x in issues.keys()]:
+            summary = f"{summary}{icons[level]} {len(issues[level].keys())} "
+            
+        # ST-1159: Congratulate on 0 vulnerabilities :D
+        if not summary:
+            summary = ":tada: None!"
 
         # ST-1159: Send a header for the report
         msg = "-------------------------------------------------------"
         msg = f"{msg}\n:rotating_light: *Image Scan Report:* {repotag}"
         msg = f"{msg}\n:desktop_computer: *Running on Hosts:* {hosts}"
-        send_to_slack(webhook, msg)
+        msg = f"{msg}\n:radioactive_sign: *Vulnerabilities:* {summary}"
+        thread = message_to_slack(webhook, msg)
         msg = ''
 
         # ST-1159: For each severity level
@@ -98,17 +162,17 @@ def report_to_slack(webhook: str, reports: dict) -> None:
                     msg = f"{msg} {issue[0]};"
 
                 # ST-1159: Truncate the message if it gets too long
-                if len(msg) > 3000:
-                    send_to_slack(webhook, msg)
+                if len(msg) > 2000:
+                    message_to_slack_thread(webhook, msg, thread)
                     msg = ''
 
             # ST-1159: Send the issues found
-            send_to_slack(webhook, msg)
+            message_to_slack_thread(webhook, msg, thread)
             msg = ''
 
 
 if __name__ == "__main__":
-    webhook = sys.argv[1]
+    token = sys.argv[1]
     pathglob = sys.argv[2]
     reports = aggregate_reports(pathglob)
-    report_to_slack(webhook, reports)
+    report_to_slack(token, reports)
