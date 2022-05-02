@@ -71,7 +71,7 @@
     - name: Fetch trivy reports
       ansible.builtin.fetch:
         src: "{{ trivy_cache_path }}/reports/podman_{{ item }}.json"
-        dest: /tmp/reports/{{ inventory_hostname }}_podman_{{ item }}.trivy.json
+        dest: /tmp/reports/{{ inventory_hostname }}_podman_{{ item }}.json
         flat: true
       with_items: "{{ images.stdout_lines }}"
 
