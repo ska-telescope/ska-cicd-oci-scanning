@@ -2,6 +2,18 @@ import json
 import glob
 import sys
 import os
+import requests
+import time
+
+
+icons = {
+    'CRITICAL': ':red_circle:',
+    'HIGH': ':large_orange_circle:',
+    'MEDIUM': ':large_yellow_circle:',
+    'LOW': ':large_green_circle:',
+    'UNKNOWN': ':black_circle:',
+}
+sorted_levels = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN']
 
 
 # ST-1159: Identify the host being reported on
@@ -48,9 +60,47 @@ def aggregate_reports(pathglob: str) -> dict:
     return reports
 
 
+# ST-1159: Message message to slack
+def send_to_slack(webhook: str, message: str) -> None:
+    data = {'text': message}
+    requests.post(webhook, json.dumps(data))
+    time.sleep(1)
+
+
 # ST-1159: Report the issues found to slack
 def report_to_slack(webhook: str, reports: dict) -> None:
-    pass
+    for repotag in reports.keys():
+        hosts = '; '.join(reports[repotag]['hosts'])
+
+        # ST-1159: Do not report if there is nothing to report
+        issues = reports[repotag]['issues']
+        if len(issues.keys()) == 0:
+            continue
+
+        # ST-1159: Send a header for the report
+        message = f":rotating_light: *Scanning Report for Image:* {repotag}"
+        message = f"{message}\n:desktop_computer: *Running on Hosts:* {hosts}"
+        send_to_slack(webhook, message)
+        message = ''
+
+        # ST-1159: For each severity level
+        for level in [x for x in sorted_levels if x in issues.keys()]:
+            message = f"{message}\n {icons[level]} *{level}*\n"
+            for issue in issues[level].items():
+                # ST-1159: Add a link to the issue if there is one
+                if issue[1]:
+                    message = f"{message} <{issue[1]}|{issue[0]}>;"
+                else:
+                    message = f"{message} {issue[0]};"
+
+                # ST-1159: Truncate the message if it gets too long
+                if len(message) > 3000:
+                    send_to_slack(webhook, message)
+                    message = ''
+
+            # ST-1159: Send the issues found
+            send_to_slack(webhook, message)
+            message = ''
 
 
 if __name__ == "__main__":
