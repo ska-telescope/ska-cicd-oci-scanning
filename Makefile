@@ -1,4 +1,5 @@
 INVENTORY_PATH ?= ..
+SLACK_VULN_WEBHOOK_URL ?=
 
 .DEFAULT_GOAL := help
 
@@ -26,7 +27,9 @@ set_inventory:  ## Combines the inventory from the parent folder for scanning
 	rm -f $(INVENTORY_PATH)/combined_inventory/*.save $(INVENTORY_PATH)/combined_inventory/*.backup
 
 scan: set_inventory  ## Scans the images running on the inventory
-	ansible-playbook -i $(INVENTORY_PATH)/combined_inventory playbooks/oci_scan.yml
+	ansible-playbook -i $(INVENTORY_PATH)/combined_inventory \
+		-e "slack_vuln_webhook_url=$(SLACK_VULN_WEBHOOK_URL)" \
+		playbooks/oci_scan.yml
 
 help:  ## Show this help.
 	@echo "make targets:"
