@@ -89,8 +89,8 @@ def message_to_slack(token: str, message: str) -> str:
     while not response or response.status_code != 200:
         time.sleep(1)
         response = requests.post(
-            url=slack_endpoint, 
-            data=json.dumps(data), 
+            url=slack_endpoint,
+            data=json.dumps(data),
             headers=headers
         )
     return response.json()['ts']
@@ -121,8 +121,8 @@ def message_to_slack_thread(token: str, message: str, thread: str) -> None:
     while not response or response.status_code != 200:
         time.sleep(1)
         response = requests.post(
-            url=slack_endpoint, 
-            data=json.dumps(data), 
+            url=slack_endpoint,
+            data=json.dumps(data),
             headers=headers
         )
 
@@ -138,7 +138,7 @@ def report_to_slack(webhook: str, reports: dict) -> None:
         issues = reports[repotag]['issues']
         for level in [x for x in sorted_levels if x in issues.keys()]:
             summary = f"{summary}{icons[level]} {len(issues[level].keys())} "
-            
+
         # ST-1159: Congratulate on 0 vulnerabilities :D
         if not summary:
             summary = ":tada: None!"
