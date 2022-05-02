@@ -144,8 +144,7 @@ def report_to_slack(webhook: str, reports: dict) -> None:
             summary = ":tada: None!"
 
         # ST-1159: Send a header for the report
-        msg = "-------------------------------------------------------"
-        msg = f"{msg}\n:rotating_light: *Image Scan Report:* {repotag}"
+        msg = f":rotating_light: *Image Scan Report:* {repotag}"
         msg = f"{msg}\n:desktop_computer: *Running on Hosts:* {hosts}"
         msg = f"{msg}\n:radioactive_sign: *Vulnerabilities:* {summary}"
         thread = message_to_slack(webhook, msg)
