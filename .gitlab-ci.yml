@@ -30,7 +30,7 @@ stages:
   - scan
 
 linting:
-  stage: list
+  stage: lint
   before_script: 
     - *install_reqs
   tags:
