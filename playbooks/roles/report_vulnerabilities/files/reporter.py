@@ -4,6 +4,7 @@ import sys
 import os
 import requests
 import time
+import logging
 
 
 icons = {
@@ -30,35 +31,41 @@ def aggregate_reports(pathglob: str) -> dict:
 
     # ST-1159: Open the vulnerability report
     for filepath in glob.glob(pathglob):
-        with open(filepath, 'r') as fd:
-            data = json.load(fd)
+        try:
+            with open(filepath, 'r') as fd:
+                data = json.load(fd)
 
-        hostname = get_hostname(filepath)
-        if 'RepoTags' in data['Metadata'].keys():
-            image = data['Metadata']['RepoTags'][0]
-        else:
-            image = data['Metadata']['ImageID']
+            # ST-1159: Get an identifiable image reference
+            hostname = get_hostname(filepath)
+            if 'RepoTags' in data['Metadata'].keys():
+                image = data['Metadata']['RepoTags'][0]
+            else:
+                image = data['Metadata']['ImageID']
 
-        # ST-1159: Skip duplicate images
-        if image in reports.keys():
-            reports[image]['hosts'].append(hostname)
-            continue
+            # ST-1159: Skip duplicate images
+            if image in reports.keys():
+                reports[image]['hosts'].append(hostname)
+                continue
 
-        # ST-1159: Create a report for the repoTag
-        report = {
-            'hosts': [hostname],
-            'issues': {},
-        }
+            # ST-1159: Create a report for the repoTag
+            report = {
+                'hosts': [hostname],
+                'issues': {},
+            }
 
-        # ST-1159: Retrieve vulnerabilities
-        for result in data.get('Results', []):
-            for vuln in result.get('Vulnerabilities', []):
-                issues = report['issues'].get(vuln['Severity'], {})
-                issues[vuln['VulnerabilityID']] = vuln.get('PrimaryURL', None)
-                report['issues'][vuln['Severity']] = issues
+            # ST-1159: Retrieve vulnerabilities
+            for result in data.get('Results', []):
+                for vuln in result.get('Vulnerabilities', []):
+                    issues = report['issues'].get(vuln['Severity'], {})
+                    issues[vuln['VulnerabilityID']] = vuln.get(
+                        'PrimaryURL', None
+                    )
+                    report['issues'][vuln['Severity']] = issues
 
-        # ST-1159: Save the generated repotag report
-        reports[image] = report
+            # ST-1159: Save the generated repotag report
+            reports[image] = report
+        except Exception as ex:
+            logging.warning(f'Failed to parse report {filepath}: {ex}')
 
     # ST-1159: Return all generated reports
     return reports
