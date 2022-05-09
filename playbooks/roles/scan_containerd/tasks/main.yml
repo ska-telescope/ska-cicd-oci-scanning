@@ -1,0 +1,90 @@
+---
+- name: Check if docker is installed
+  ansible.builtin.command: docker --version
+  register: docker_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Check if crictl is installed
+  ansible.builtin.command: crictl --version
+  register: crictl_exists
+  ignore_errors: true
+  changed_when: false
+
+- name: Scan crictl images using docker
+  when: docker_exists.rc == 0 and crictl_exists.rc == 0
+  block:
+    - name: Check docker socket
+      ansible.builtin.stat:
+        path: "{{ docker_socket_path }}"
+      register: docker_sock
+
+    - name: Report if the docker socket does not exist
+      ansible.builtin.debug:
+        msg: "Docker socket not found at {{ docker_socket_path }}."
+      when: not docker_sock.stat.exists
+      failed_when: true
+
+    - name: Prune crictl images not in use
+      ansible.builtin.command: crictl --debug=false rmi --prune
+      register: pruned_crictl_images
+      changed_when: "'Deleted:' in pruned_crictl_images.stdout"
+
+    - name: Prune docker images not in use
+      ansible.builtin.command: docker system prune --volumes --all --force
+      register: pruned_docker_images
+      changed_when: "'Total reclaimed space: 0B' not in pruned_docker_images.stdout"
+
+    - name: List existing crictl images
+      ansible.builtin.shell: crictl --debug=false images --output json | jq .images[].repoTags[]
+      register: images
+      changed_when: false
+
+    - name: Pull crictl images on docker
+      ansible.builtin.command: docker pull {{ item }}
+      register: pulled_images
+      with_items: "{{ images.stdout_lines }}"
+      changed_when: "'Status: Image is up to date' not in pulled_images.stdout"
+
+    - name: List existing docker images
+      ansible.builtin.command: docker images --quiet
+      register: images
+      changed_when: false
+
+    - name: Cleanup trivy reports
+      ansible.builtin.file:
+        path: "{{ trivy_cache_path }}/reports"
+        state: absent
+
+    - name: Create reports folder
+      ansible.builtin.file:
+        path: "{{ trivy_cache_path }}/reports"
+        state: directory
+        mode: 0775
+
+    - name: Scan each existing image
+      ansible.builtin.command: docker run --rm
+        -v {{ trivy_cache_path }}/:/root/.cache/
+        -v {{ docker_socket_path }}:/var/run/docker.sock
+        aquasec/trivy:latest image
+        -o {{ trivy_cache_path }}/reports/docker_{{ item }}.json
+        -f json {{ item }}
+      with_items: "{{ images.stdout_lines }}"
+      changed_when: true
+
+    - name: Prune pulled images from docker
+      ansible.builtin.command: docker system prune --volumes --all --force
+      register: pruned_pulled_images
+      changed_when: "'Total reclaimed space: 0B' not in pruned_pulled_images.stdout"
+
+    - name: Fetch trivy reports
+      ansible.builtin.fetch:
+        src: "{{ trivy_cache_path }}/reports/docker_{{ item }}.json"
+        dest: /tmp/reports/{{ inventory_hostname }}_docker_{{ item }}.json
+        flat: true
+      with_items: "{{ images.stdout_lines }}"
+
+    - name: Cleanup trivy reports
+      ansible.builtin.file:
+        path: "{{ trivy_cache_path }}/reports"
+        state: absent

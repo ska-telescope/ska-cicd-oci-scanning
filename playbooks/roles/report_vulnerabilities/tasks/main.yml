@@ -1,0 +1,11 @@
+---
+- name: Set reporter tool
+  ansible.builtin.copy:
+    src: reporter.py
+    dest: "/root/reporter.py"
+    owner: root
+    mode: "0755"
+
+- name: Parse and report vulnerabilities
+  ansible.builtin.command: python3 /root/reporter.py "{{ marvin_slack_token }}" "/tmp/reports/*.json"
+  changed_when: false

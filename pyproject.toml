@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "ska-cicd-oci-scanning"
+version = "0.0.1"
+description = ""
+authors = ["Diogo Regateiro <diogo.regateiro@atlar.pt>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+ansible = "^5.7.0"
+requests = "^2.27.1"
+
+[tool.poetry.dev-dependencies]
+ansible-lint = "^6.0.2"
+ansible-lint-junit = "^0.17.4"
+yamllint = "^1.26.3"
+flake8 = "^4.0.1"
+yamllint-junit = "^0.8"
+flake8-formatter-junit-xml = "^0.0.6"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
