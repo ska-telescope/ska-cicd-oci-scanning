@@ -35,6 +35,14 @@
       register: pruned_docker_images
       changed_when: "'Total reclaimed space: 0B' not in pruned_docker_images.stdout"
 
+    - name: Install jq
+      ansible.builtin.apt: 
+        name: "jq"
+        update_cache: true
+        state: present
+      register: installed_jq
+      changed_when: false
+
     - name: List existing crictl images
       ansible.builtin.shell: crictl --debug=false images --output json | jq .images[].repoTags[]
       register: images
